@@ -34,7 +34,7 @@ services:
       SERVER_SERVLET_CONTEXT_PATH: /api
       
       # CORS configuration
-      CORS_ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3007
+      CORS_ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3007,https://shopee.nguocchieuvangle.io.vn/
       
       # JVM options
       JAVA_OPTS: "-Xms256m -Xmx512m"
