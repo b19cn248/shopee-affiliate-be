@@ -58,4 +58,8 @@ public class VoucherUpdateRequest {
     
     @JsonProperty("status")
     private VoucherStatus status;
+    
+    @Size(max = 500, message = "Product URL must not exceed 500 characters")
+    @JsonProperty("product_url")
+    private String productUrl;
 }

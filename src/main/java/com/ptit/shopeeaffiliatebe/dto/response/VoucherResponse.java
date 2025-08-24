@@ -59,6 +59,9 @@ public class VoucherResponse {
     @JsonProperty("tags")
     private String[] tags;
     
+    @JsonProperty("product_url")
+    private String productUrl;
+    
     @JsonProperty("created_at")
     private LocalDateTime createdAt;
     

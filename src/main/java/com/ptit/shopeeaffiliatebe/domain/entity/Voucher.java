@@ -72,6 +72,9 @@ public class Voucher {
     @JdbcTypeCode(SqlTypes.ARRAY)
     private String[] tags;
     
+    @Column(name = "product_url", length = 500)
+    private String productUrl;
+    
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     

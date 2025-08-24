@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="002-1" author="system">
+        <comment>Add product_url column to vouchers table</comment>
+        <addColumn tableName="vouchers">
+            <column name="product_url" type="VARCHAR(500)">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+        <rollback>
+            <dropColumn tableName="vouchers" columnName="product_url"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="002-2" author="system">
+        <comment>Add index for product_url column for better performance</comment>
+        <createIndex tableName="vouchers" indexName="idx_voucher_product_url">
+            <column name="product_url"/>
+        </createIndex>
+        <rollback>
+            <dropIndex tableName="vouchers" indexName="idx_voucher_product_url"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

@@ -64,4 +64,8 @@ public class VoucherCreateRequest {
     
     @JsonProperty("tags")
     private String[] tags;
+    
+    @Size(max = 500, message = "Product URL must not exceed 500 characters")
+    @JsonProperty("product_url")
+    private String productUrl;
 }

@@ -26,6 +26,7 @@ public class VoucherMapper {
         voucher.setEndAt(request.getEndAt());
         voucher.setUsageLimit(request.getUsageLimit());
         voucher.setTags(request.getTags());
+        voucher.setProductUrl(request.getProductUrl());
         
         return voucher;
     }
@@ -68,6 +69,9 @@ public class VoucherMapper {
         if (request.getStatus() != null) {
             voucher.setStatus(request.getStatus());
         }
+        if (request.getProductUrl() != null) {
+            voucher.setProductUrl(request.getProductUrl());
+        }
     }
     
     public VoucherResponse toResponse(Voucher voucher) {
@@ -90,6 +94,7 @@ public class VoucherMapper {
                 .usedCount(voucher.getUsedCount())
                 .status(voucher.getStatus() != null ? voucher.getStatus().name() : null)
                 .tags(voucher.getTags())
+                .productUrl(voucher.getProductUrl())
                 .createdAt(voucher.getCreatedAt())
                 .updatedAt(voucher.getUpdatedAt())
                 .createdBy(voucher.getCreatedBy())
