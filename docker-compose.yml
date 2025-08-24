@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  shopee-affiliate-be:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: shopee-affiliate-be
+    ports:
+      - "8080:8080"
+    environment:
+      # Spring profiles
+      SPRING_PROFILES_ACTIVE: docker
+      
+      # Database configuration - Connect to existing PostgreSQL
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/shopee_affiliate
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      
+      # JPA configuration
+      SPRING_JPA_HIBERNATE_DDL_AUTO: none
+      SPRING_JPA_SHOW_SQL: "true"
+      
+      # Liquibase configuration
+      SPRING_LIQUIBASE_ENABLED: "true"
+      SPRING_LIQUIBASE_CHANGE_LOG: classpath:db/changelog/db.changelog-master.xml
+      
+      # Jackson configuration for snake_case
+      SPRING_JACKSON_PROPERTY_NAMING_STRATEGY: SNAKE_CASE
+      
+      # Server configuration
+      SERVER_PORT: 8080
+      SERVER_SERVLET_CONTEXT_PATH: /api
+      
+      # CORS configuration
+      CORS_ALLOWED_ORIGINS: http://localhost:3000
+      
+      # JVM options
+      JAVA_OPTS: "-Xms256m -Xmx512m"
+    networks:
+      - shop-sport-micro
+    depends_on:
+      - postgres-check
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/api/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Service to check if PostgreSQL is ready
+  postgres-check:
+    image: busybox:latest
+    container_name: postgres-check
+    command: sh -c "until nc -z postgres 5432; do echo 'Waiting for PostgreSQL...'; sleep 2; done; echo 'PostgreSQL is ready!'"
+    networks:
+      - shop-sport-micro
+
+networks:
+  shop-sport-micro:
+    external: true

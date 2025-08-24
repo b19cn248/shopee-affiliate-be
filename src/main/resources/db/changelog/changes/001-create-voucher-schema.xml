@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="001-1" author="system">
+        <comment>Create voucher platform enum type</comment>
+        <sql>
+            CREATE TYPE voucher_platform AS ENUM ('SHOPEE', 'LAZADA', 'TIKTOK', 'TIKI', 'OTHER');
+        </sql>
+        <rollback>
+            DROP TYPE IF EXISTS voucher_platform;
+        </rollback>
+    </changeSet>
+
+    <changeSet id="001-2" author="system">
+        <comment>Create voucher discount type enum</comment>
+        <sql>
+            CREATE TYPE voucher_discount_type AS ENUM ('PERCENT', 'FIXED');
+        </sql>
+        <rollback>
+            DROP TYPE IF EXISTS voucher_discount_type;
+        </rollback>
+    </changeSet>
+
+    <changeSet id="001-3" author="system">
+        <comment>Create voucher status enum type</comment>
+        <sql>
+            CREATE TYPE voucher_status AS ENUM ('DRAFT', 'ACTIVE', 'INACTIVE', 'EXPIRED');
+        </sql>
+        <rollback>
+            DROP TYPE IF EXISTS voucher_status;
+        </rollback>
+    </changeSet>
+
+    <changeSet id="001-4" author="system">
+        <comment>Create vouchers table</comment>
+        <createTable tableName="vouchers">
+            <column name="id" type="BIGSERIAL">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="code" type="VARCHAR(64)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="title" type="VARCHAR(200)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="TEXT"/>
+            <column name="platform" type="voucher_platform">
+                <constraints nullable="false"/>
+            </column>
+            <column name="discount_type" type="voucher_discount_type">
+                <constraints nullable="false"/>
+            </column>
+            <column name="discount_value" type="DECIMAL(12,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="min_order_amount" type="DECIMAL(12,2)" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="start_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="end_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="usage_limit" type="INTEGER"/>
+            <column name="used_count" type="INTEGER" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="voucher_status">
+                <constraints nullable="false"/>
+            </column>
+            <column name="tags" type="TEXT[]"/>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="VARCHAR(100)"/>
+            <column name="updated_by" type="VARCHAR(100)"/>
+            <column name="deleted_at" type="TIMESTAMP"/>
+        </createTable>
+
+        <rollback>
+            DROP TABLE IF EXISTS vouchers;
+        </rollback>
+    </changeSet>
+
+    <changeSet id="001-5" author="system">
+        <comment>Add check constraints for vouchers table</comment>
+        <sql>
+            ALTER TABLE vouchers ADD CONSTRAINT ck_time_range CHECK (end_at > start_at);
+            ALTER TABLE vouchers ADD CONSTRAINT ck_discount_value CHECK (discount_value >= 0);
+        </sql>
+        <rollback>
+            ALTER TABLE vouchers DROP CONSTRAINT IF EXISTS ck_time_range;
+            ALTER TABLE vouchers DROP CONSTRAINT IF EXISTS ck_discount_value;
+        </rollback>
+    </changeSet>
+
+    <changeSet id="001-6" author="system">
+        <comment>Create indexes for vouchers table</comment>
+        <createIndex tableName="vouchers" indexName="idx_voucher_status">
+            <column name="status"/>
+        </createIndex>
+        <createIndex tableName="vouchers" indexName="idx_voucher_platform">
+            <column name="platform"/>
+        </createIndex>
+        <createIndex tableName="vouchers" indexName="idx_voucher_time">
+            <column name="start_at"/>
+            <column name="end_at"/>
+        </createIndex>
+        <createIndex tableName="vouchers" indexName="idx_voucher_deleted">
+            <column name="deleted_at"/>
+        </createIndex>
+        <createIndex tableName="vouchers" indexName="idx_voucher_code">
+            <column name="code"/>
+        </createIndex>
+
+        <rollback>
+            DROP INDEX IF EXISTS idx_voucher_status;
+            DROP INDEX IF EXISTS idx_voucher_platform;
+            DROP INDEX IF EXISTS idx_voucher_time;
+            DROP INDEX IF EXISTS idx_voucher_deleted;
+            DROP INDEX IF EXISTS idx_voucher_code;
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
