@@ -10,6 +10,7 @@ pipeline {
         // Biến môi trường
         PROJECT_NAME = 'shopee-affiliate-be'
         DOCKER_IMAGE = "${PROJECT_NAME}:${BUILD_NUMBER}"
+        BRANCH_NAME = "${env.BRANCH_NAME ?: 'main'}"
     }
     
     options {
@@ -35,10 +36,23 @@ pipeline {
         stage('Build với Maven') {
             steps {
                 echo '🔨 Đang build project với Maven...'
-                sh '''
-                    mvn clean package -DskipTests
-                    echo "✅ Build Maven thành công!"
-                '''
+                script {
+                    try {
+                        sh '''
+                            echo "Java version:"
+                            java -version
+                            echo "Maven version:"
+                            mvn --version
+                            echo "Building project..."
+                            mvn clean package -DskipTests
+                            echo "✅ Build Maven thành công!"
+                        '''
+                    } catch (Exception e) {
+                        echo "❌ Lỗi khi build: ${e.message}"
+                        currentBuild.result = 'FAILURE'
+                        throw e
+                    }
+                }
             }
         }
         
@@ -117,7 +131,7 @@ pipeline {
                     <h2>Build Thành Công!</h2>
                     <p><b>Project:</b> ${PROJECT_NAME}</p>
                     <p><b>Build Number:</b> ${BUILD_NUMBER}</p>
-                    <p><b>Branch:</b> ${BRANCH_NAME}</p>
+                    <p><b>Branch:</b> ${env.BRANCH_NAME ?: 'main'}</p>
                     <p><b>Thời gian:</b> ${currentBuild.durationString}</p>
                     <hr>
                     <p>Xem chi tiết tại: <a href="${BUILD_URL}">${BUILD_URL}</a></p>
@@ -135,7 +149,7 @@ pipeline {
                     <h2>Build Thất Bại!</h2>
                     <p><b>Project:</b> ${PROJECT_NAME}</p>
                     <p><b>Build Number:</b> ${BUILD_NUMBER}</p>
-                    <p><b>Branch:</b> ${BRANCH_NAME}</p>
+                    <p><b>Branch:</b> ${env.BRANCH_NAME ?: 'main'}</p>
                     <p><b>Thời gian:</b> ${currentBuild.durationString}</p>
                     <hr>
                     <p><b>Lỗi:</b></p>
