@@ -19,4 +19,9 @@ public class TestController {
     public String post() {
         return "Hello World!";
     }
+
+    @DeleteMapping
+    public String delete() {
+        return "Hello World!";
+    }
 }
