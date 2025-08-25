@@ -56,66 +56,63 @@ pipeline {
             }
         }
         
-        stage('Build Docker Image') {
+        stage('Build JAR file') {
             steps {
-                echo '🐳 Đang build Docker image...'
+                echo '📦 Đang đóng gói JAR file...'
                 script {
                     sh """
-                        docker build -t ${DOCKER_IMAGE} .
-                        echo "✅ Build Docker image thành công!"
+                        # Kiểm tra file JAR đã được build
+                        ls -la target/*.jar
                         
-                        # Liệt kê image vừa build
-                        docker images | grep ${PROJECT_NAME}
+                        # Copy JAR và Dockerfile để chuẩn bị deploy
+                        mkdir -p deploy
+                        cp target/*.jar deploy/app.jar
+                        cp Dockerfile deploy/
+                        
+                        echo "✅ Chuẩn bị file deploy thành công!"
                     """
                 }
             }
         }
         
-        stage('Deploy Local') {
+        stage('Deploy to VPS') {
             steps {
-                echo '🚀 Đang deploy ứng dụng...'
+                echo '🚀 Đang deploy lên VPS...'
                 script {
-                    sh """
-                        # Dừng container cũ nếu đang chạy
-                        docker stop ${PROJECT_NAME} || true
-                        docker rm ${PROJECT_NAME} || true
-                        
-                        # Chạy container mới
-                        docker run -d \
-                            --name ${PROJECT_NAME} \
-                            -p 8080:8080 \
-                            --restart unless-stopped \
-                            ${DOCKER_IMAGE}
-                        
-                        echo "✅ Deploy thành công!"
-                        echo "📍 Ứng dụng đang chạy tại: http://localhost:8080"
-                        
-                        # Kiểm tra container status
-                        docker ps | grep ${PROJECT_NAME}
+                    // CÁCH 1: Dùng SSH Agent (cần cấu hình SSH key trong Jenkins)
+                    // sshagent(['your-ssh-credential-id']) {
+                    //     sh """
+                    //         scp -r deploy/* user@your-vps-ip:/path/to/app/
+                    //         ssh user@your-vps-ip 'cd /path/to/app && docker build -t ${DOCKER_IMAGE} . && docker restart ${PROJECT_NAME}'
+                    //     """
+                    // }
+                    
+                    // CÁCH 2: Dùng SSH với password (cần plugin SSH)
+                    echo """
+                    ⚠️  Cần cấu hình thêm để deploy lên VPS:
+                    
+                    1. Thêm SSH credentials trong Jenkins
+                    2. Cài plugin 'SSH Agent' hoặc 'Publish Over SSH'
+                    3. Uncomment và cấu hình đoạn code SSH phía trên
+                    
+                    Hoặc sử dụng webhook để trigger deploy script trên VPS
                     """
                 }
             }
         }
         
-        stage('Health Check') {
+        stage('Verify Build') {
             steps {
-                echo '🏥 Kiểm tra ứng dụng...'
+                echo '🏥 Kiểm tra kết quả build...'
                 script {
                     sh """
-                        # Đợi 10 giây để ứng dụng khởi động
-                        sleep 10
+                        echo "📋 File JAR đã build:"
+                        ls -lh target/*.jar
                         
-                        # Kiểm tra container còn chạy không
-                        if docker ps | grep -q ${PROJECT_NAME}; then
-                            echo "✅ Container đang chạy bình thường"
-                        else
-                            echo "❌ Container không chạy!"
-                            exit 1
-                        fi
+                        echo "📁 Nội dung thư mục deploy:"
+                        ls -la deploy/
                         
-                        # Kiểm tra logs
-                        echo "📋 10 dòng log cuối:"
-                        docker logs --tail 10 ${PROJECT_NAME}
+                        echo "✅ Build artifacts đã sẵn sàng để deploy!"
                     """
                 }
             }
