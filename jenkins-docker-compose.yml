@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  jenkins:
+    image: jenkins/jenkins:lts
+    container_name: jenkins
+    user: root  # Chạy với quyền root để truy cập Docker socket
+    ports:
+      - "8083:8080"    # Jenkins Web UI
+      - "50000:50000"  # Jenkins Agent Port
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock  # Mount Docker socket
+      - /usr/bin/docker:/usr/bin/docker            # Mount Docker CLI
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - JAVA_OPTS=-Djenkins.install.runSetupWizard=false  # Skip setup wizard (optional)
+    restart: unless-stopped
+
+volumes:
+  jenkins_home:
