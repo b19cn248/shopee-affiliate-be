@@ -24,4 +24,9 @@ public class TestController {
     public String delete() {
         return "Hello World!";
     }
+
+    @PostMapping
+    public String postPost() {
+        return "Hello World!";
+    }
 }
