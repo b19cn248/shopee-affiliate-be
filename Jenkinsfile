@@ -125,41 +125,12 @@ pipeline {
     post {
         success {
             echo '✅ Pipeline thành công!'
-            emailext (
-                subject: "✅ Build Thành Công: ${PROJECT_NAME} - Build #${BUILD_NUMBER}",
-                body: """
-                    <h2>Build Thành Công!</h2>
-                    <p><b>Project:</b> ${PROJECT_NAME}</p>
-                    <p><b>Build Number:</b> ${BUILD_NUMBER}</p>
-                    <p><b>Branch:</b> ${env.BRANCH_NAME ?: 'main'}</p>
-                    <p><b>Thời gian:</b> ${currentBuild.durationString}</p>
-                    <hr>
-                    <p>Xem chi tiết tại: <a href="${BUILD_URL}">${BUILD_URL}</a></p>
-                """,
-                to: '${DEFAULT_RECIPIENTS}',
-                mimeType: 'text/html'
-            )
+            echo "Build #${BUILD_NUMBER} completed successfully"
         }
         
         failure {
             echo '❌ Pipeline thất bại!'
-            emailext (
-                subject: "❌ Build Thất Bại: ${PROJECT_NAME} - Build #${BUILD_NUMBER}",
-                body: """
-                    <h2>Build Thất Bại!</h2>
-                    <p><b>Project:</b> ${PROJECT_NAME}</p>
-                    <p><b>Build Number:</b> ${BUILD_NUMBER}</p>
-                    <p><b>Branch:</b> ${env.BRANCH_NAME ?: 'main'}</p>
-                    <p><b>Thời gian:</b> ${currentBuild.durationString}</p>
-                    <hr>
-                    <p><b>Lỗi:</b></p>
-                    <pre>${currentBuild.currentResult}</pre>
-                    <hr>
-                    <p>Xem chi tiết tại: <a href="${BUILD_URL}">${BUILD_URL}</a></p>
-                """,
-                to: '${DEFAULT_RECIPIENTS}',
-                mimeType: 'text/html'
-            )
+            echo "Build #${BUILD_NUMBER} failed"
         }
         
         always {
