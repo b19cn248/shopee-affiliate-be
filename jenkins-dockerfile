@@ -1,0 +1,27 @@
+# Custom Jenkins image với Git và Docker
+FROM jenkins/jenkins:lts
+
+# Switch to root để cài packages
+USER root
+
+# Cài đặt Git, Docker CLI và dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    wget \
+    ca-certificates \
+    gnupg \
+    lsb-release \
+    docker.io \
+    && rm -rf /var/lib/apt/lists/*
+
+# Cấu hình Git global
+RUN git config --global user.name "Jenkins CI" && \
+    git config --global user.email "jenkins@localhost" && \
+    git config --global init.defaultBranch main
+
+# Add jenkins user vào docker group
+RUN groupadd -f docker && usermod -aG docker jenkins
+
+# Switch back to jenkins user
+USER jenkins
