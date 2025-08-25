@@ -9,7 +9,10 @@ pipeline {
     environment {
         // Biến môi trường
         PROJECT_NAME = 'shopee-affiliate-be'
-        DOCKER_IMAGE = "${PROJECT_NAME}:${BUILD_NUMBER}"
+        DOCKER_HUB_REPO = 'yourdockerhubusername/shopee-affiliate-be' // TODO: Thay username của bạn
+        DOCKER_TAG = "${BUILD_NUMBER}"
+        DOCKER_IMAGE_LATEST = "${DOCKER_HUB_REPO}:latest"
+        DOCKER_IMAGE_TAGGED = "${DOCKER_HUB_REPO}:${DOCKER_TAG}"
         BRANCH_NAME = "${env.BRANCH_NAME ?: 'main'}"
     }
     
@@ -56,63 +59,93 @@ pipeline {
             }
         }
         
-        stage('Build JAR file') {
+        stage('Build Docker Image') {
             steps {
-                echo '📦 Đang đóng gói JAR file...'
+                echo '🐳 Đang build Docker image...'
                 script {
+                    // Build image với tag
                     sh """
-                        # Kiểm tra file JAR đã được build
-                        ls -la target/*.jar
-                        
-                        # Copy JAR và Dockerfile để chuẩn bị deploy
-                        mkdir -p deploy
-                        cp target/*.jar deploy/app.jar
-                        cp Dockerfile deploy/
-                        
-                        echo "✅ Chuẩn bị file deploy thành công!"
+                        docker build -t ${DOCKER_IMAGE_TAGGED} .
+                        docker tag ${DOCKER_IMAGE_TAGGED} ${DOCKER_IMAGE_LATEST}
+                        echo "✅ Build Docker image thành công!"
                     """
                 }
             }
         }
         
-        stage('Deploy to VPS') {
+        stage('Push to Docker Hub') {
             steps {
-                echo '🚀 Đang deploy lên VPS...'
+                echo '📤 Đang push image lên Docker Hub...'
                 script {
-                    // CÁCH 1: Dùng SSH Agent (cần cấu hình SSH key trong Jenkins)
-                    // sshagent(['your-ssh-credential-id']) {
-                    //     sh """
-                    //         scp -r deploy/* user@your-vps-ip:/path/to/app/
-                    //         ssh user@your-vps-ip 'cd /path/to/app && docker build -t ${DOCKER_IMAGE} . && docker restart ${PROJECT_NAME}'
-                    //     """
-                    // }
-                    
-                    // CÁCH 2: Dùng SSH với password (cần plugin SSH)
-                    echo """
-                    ⚠️  Cần cấu hình thêm để deploy lên VPS:
-                    
-                    1. Thêm SSH credentials trong Jenkins
-                    2. Cài plugin 'SSH Agent' hoặc 'Publish Over SSH'
-                    3. Uncomment và cấu hình đoạn code SSH phía trên
-                    
-                    Hoặc sử dụng webhook để trigger deploy script trên VPS
+                    // Login và push lên Docker Hub
+                    withCredentials([usernamePassword(
+                        credentialsId: 'dockerhub-credentials',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    )]) {
+                        sh """
+                            echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin
+                            docker push ${DOCKER_IMAGE_TAGGED}
+                            docker push ${DOCKER_IMAGE_LATEST}
+                            echo "✅ Push Docker image thành công!"
+                        """
+                    }
+                }
+            }
+        }
+        
+        stage('Deploy on VPS') {
+            steps {
+                echo '🚀 Đang deploy container mới...'
+                script {
+                    sh """
+                        # Stop và remove container cũ
+                        docker stop ${PROJECT_NAME} || true
+                        docker rm ${PROJECT_NAME} || true
+                        
+                        # Pull image mới từ Docker Hub
+                        docker pull ${DOCKER_IMAGE_LATEST}
+                        
+                        # Run container mới
+                        docker run -d \\
+                            --name ${PROJECT_NAME} \\
+                            -p 8080:8080 \\
+                            --restart unless-stopped \\
+                            ${DOCKER_IMAGE_LATEST}
+                        
+                        echo "✅ Deploy thành công!"
+                        
+                        # Kiểm tra container status
+                        docker ps | grep ${PROJECT_NAME}
+                        
+                        # Clean up old images
+                        docker image prune -af --filter "until=24h"
                     """
                 }
             }
         }
         
-        stage('Verify Build') {
+        stage('Health Check') {
             steps {
-                echo '🏥 Kiểm tra kết quả build...'
+                echo '🏥 Kiểm tra ứng dụng...'
                 script {
                     sh """
-                        echo "📋 File JAR đã build:"
-                        ls -lh target/*.jar
+                        # Đợi ứng dụng khởi động
+                        echo "Đợi 15 giây để ứng dụng khởi động..."
+                        sleep 15
                         
-                        echo "📁 Nội dung thư mục deploy:"
-                        ls -la deploy/
-                        
-                        echo "✅ Build artifacts đã sẵn sàng để deploy!"
+                        # Kiểm tra container
+                        if docker ps | grep -q ${PROJECT_NAME}; then
+                            echo "✅ Container đang chạy"
+                            
+                            # Xem logs
+                            echo "📋 Logs gần nhất:"
+                            docker logs --tail 20 ${PROJECT_NAME}
+                        else
+                            echo "❌ Container không chạy!"
+                            docker logs ${PROJECT_NAME}
+                            exit 1
+                        fi
                     """
                 }
             }
