@@ -9,10 +9,8 @@ pipeline {
     environment {
         // Biến môi trường
         PROJECT_NAME = 'shopee-affiliate-be'
-        DOCKER_HUB_REPO = 'yourdockerhubusername/shopee-affiliate-be' // TODO: Thay username của bạn
-        DOCKER_TAG = "${BUILD_NUMBER}"
-        DOCKER_IMAGE_LATEST = "${DOCKER_HUB_REPO}:latest"
-        DOCKER_IMAGE_TAGGED = "${DOCKER_HUB_REPO}:${DOCKER_TAG}"
+        DOCKER_IMAGE = "${PROJECT_NAME}:${BUILD_NUMBER}"
+        DOCKER_IMAGE_LATEST = "${PROJECT_NAME}:latest"
         BRANCH_NAME = "${env.BRANCH_NAME ?: 'main'}"
     }
     
@@ -63,50 +61,30 @@ pipeline {
             steps {
                 echo '🐳 Đang build Docker image...'
                 script {
-                    // Build image với tag
                     sh """
-                        docker build -t ${DOCKER_IMAGE_TAGGED} .
-                        docker tag ${DOCKER_IMAGE_TAGGED} ${DOCKER_IMAGE_LATEST}
+                        # Build image với tag mới
+                        docker build -t ${DOCKER_IMAGE} .
+                        docker tag ${DOCKER_IMAGE} ${DOCKER_IMAGE_LATEST}
+                        
                         echo "✅ Build Docker image thành công!"
+                        docker images | grep ${PROJECT_NAME}
                     """
                 }
             }
         }
         
-        stage('Push to Docker Hub') {
-            steps {
-                echo '📤 Đang push image lên Docker Hub...'
-                script {
-                    // Login và push lên Docker Hub
-                    withCredentials([usernamePassword(
-                        credentialsId: 'dockerhub-credentials',
-                        usernameVariable: 'DOCKER_USER',
-                        passwordVariable: 'DOCKER_PASS'
-                    )]) {
-                        sh """
-                            echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin
-                            docker push ${DOCKER_IMAGE_TAGGED}
-                            docker push ${DOCKER_IMAGE_LATEST}
-                            echo "✅ Push Docker image thành công!"
-                        """
-                    }
-                }
-            }
-        }
-        
-        stage('Deploy on VPS') {
+        stage('Deploy Container') {
             steps {
                 echo '🚀 Đang deploy container mới...'
                 script {
                     sh """
                         # Stop và remove container cũ
+                        echo "Dừng container cũ..."
                         docker stop ${PROJECT_NAME} || true
                         docker rm ${PROJECT_NAME} || true
                         
-                        # Pull image mới từ Docker Hub
-                        docker pull ${DOCKER_IMAGE_LATEST}
-                        
-                        # Run container mới
+                        # Run container mới từ local image
+                        echo "Khởi động container mới..."
                         docker run -d \\
                             --name ${PROJECT_NAME} \\
                             -p 8080:8080 \\
@@ -114,12 +92,27 @@ pipeline {
                             ${DOCKER_IMAGE_LATEST}
                         
                         echo "✅ Deploy thành công!"
+                        echo "📍 Ứng dụng đang chạy tại: http://localhost:8080"
                         
                         # Kiểm tra container status
                         docker ps | grep ${PROJECT_NAME}
+                    """
+                }
+            }
+        }
+        
+        stage('Cleanup Old Images') {
+            steps {
+                echo '🧹 Dọn dẹp images cũ...'
+                script {
+                    sh """
+                        # Giữ lại 3 images gần nhất
+                        docker images | grep ${PROJECT_NAME} | tail -n +4 | awk '{print \$3}' | xargs -r docker rmi -f || true
                         
-                        # Clean up old images
-                        docker image prune -af --filter "until=24h"
+                        # Xóa dangling images
+                        docker image prune -f
+                        
+                        echo "✅ Đã dọn dẹp images cũ"
                     """
                 }
             }
