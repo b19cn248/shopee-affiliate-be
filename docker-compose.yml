@@ -8,7 +8,7 @@ services:
       dockerfile: Dockerfile
     container_name: shopee-affiliate-be
     ports:
-      - "8080:8080"
+      - "8011:8080"
     environment:
       # Spring profiles
       SPRING_PROFILES_ACTIVE: docker
