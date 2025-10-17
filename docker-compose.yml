@@ -8,7 +8,7 @@ services:
       dockerfile: Dockerfile
     container_name: shopee-affiliate-be
     ports:
-      - "8011:8080"
+      - "8011:8011"
     environment:
       # Spring profiles
       SPRING_PROFILES_ACTIVE: docker
@@ -30,7 +30,7 @@ services:
       SPRING_JACKSON_PROPERTY_NAMING_STRATEGY: SNAKE_CASE
       
       # Server configuration
-      SERVER_PORT: 8080
+      SERVER_PORT: 8011
       SERVER_SERVLET_CONTEXT_PATH: /api
       
       # CORS configuration
