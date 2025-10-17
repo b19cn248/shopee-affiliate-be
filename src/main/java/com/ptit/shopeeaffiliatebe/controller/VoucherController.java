@@ -24,7 +24,6 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/v1/vouchers")
 @RequiredArgsConstructor
 @Slf4j
-@Tag(name = "Voucher Management", description = "APIs for managing vouchers")
 public class VoucherController {
     
     private final VoucherService voucherService;
