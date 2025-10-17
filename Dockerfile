@@ -27,7 +27,7 @@ RUN chown -R spring:spring /app
 USER spring
 
 # Expose port
-EXPOSE 8080
+EXPOSE 8011
 
 # Run application
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
